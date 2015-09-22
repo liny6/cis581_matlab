@@ -108,6 +108,7 @@ J_ruld = theta_vec_ruld.*J_vec; %right up
 J_ud = theta_vec_ud.*J_vec; % yadda yadda...
 J_lurd = theta_vec_lurd.*J_vec;
 
+%{
 M = bsxfun(@and, bsxfun(@and, (J_lr > J_vec(ind_right)), (J_lr > J_vec(ind_ru))), ...
     bsxfun(@and, (J_lr > J_vec(ind_left)), (J_lr > J_vec(ind_ld)))) ...
     +  bsxfun(@and, bsxfun(@and, (J_ruld > J_vec(ind_ru)), (J_ruld > J_vec(ind_up))), ...
@@ -116,6 +117,14 @@ M = bsxfun(@and, bsxfun(@and, (J_lr > J_vec(ind_right)), (J_lr > J_vec(ind_ru)))
     bsxfun(@and, (J_ud > J_vec(ind_down)), (J_ud > J_vec(ind_rd)))) ...
     +  bsxfun(@and, bsxfun(@and, (J_lurd > J_vec(ind_lu)), (J_lurd > J_vec(ind_left))), ...
     bsxfun(@and, (J_lurd > J_vec(ind_left)), (J_lurd > J_vec(ind_rd))));
+%}
+
+lr_inter = max(J_vec(ind_right).*(1-sin(theta_vec)) + J_vec(ind_ru).*(sin(theta_vec)), J_vec(ind_left).*(1-sin(theta_vec)) + J_vec(ind_ld).*(sin(theta_vec)));
+ruld_inter = max(J_vec(ind_up).*(1-cos(theta_vec)) + J_vec(ind_ru).*(cos(theta_vec)), J_vec(ind_down).*(1-cos(theta_vec)) + J_vec(ind_ld).*(cos(theta_vec)));
+ud_inter = max(J_vec(ind_up).*(1+cos(theta_vec)) + J_vec(ind_lu).*(-cos(theta_vec)), J_vec(ind_down).*(1+cos(theta_vec)) + J_vec(ind_ru).*(-cos(theta_vec)));
+lurd_inter = max(J_vec(ind_left).*(1-sin(theta_vec)) + J_vec(ind_lu).*(sin(theta_vec)), J_vec(ind_right).*(1-sin(theta_vec)) + J_vec(ind_rd).*(sin(theta_vec)));
+
+M = bitor(bitor((J_lr > lr_inter),(J_ruld > ruld_inter)), bitor((J_ud > ud_inter),(J_lurd > lurd_inter)));
 
 M = reshape(M, [nr, nc]);
 end
@@ -125,11 +134,11 @@ function E = edgeLink(M, J, theta)
 J_sup = J.* M;
 [nr, nc] = size(J);
 
-high = 30;
-low = 3;
+high = 20;
+low = 5;
 
 J_high = bsxfun(@ge, J_sup, high);
-J_low = bsxfun(@ge, bsxfun(@le, J_sup, high), low);
+J_low = bitand(bsxfun(@ge, J_sup, low), bsxfun(@le, J_sup, high));
 
 %vectorize
 
@@ -155,10 +164,17 @@ ind_ld = sub2ind([nr, nc], down(:), left(:));
 
 theta_vec = theta(:);
 
+%{
 theta_vec_lr = bsxfun(@eq, theta_vec, 0); %entries in the J matrix that has theta at 0 degrees
 theta_vec_ruld = bsxfun(@eq, theta_vec, pi/4);
 theta_vec_ud = bsxfun(@eq, theta_vec, pi/2);
 theta_vec_lurd = bsxfun(@eq, theta_vec, 3*pi/4);
+%}
+
+theta_vec_ud = bsxfun(@eq, theta_vec, 0); %entries in the J matrix that has theta at 0 degrees
+theta_vec_lurd = bsxfun(@eq, theta_vec, pi/4);
+theta_vec_lr = bsxfun(@eq, theta_vec, pi/2);
+theta_vec_ruld = bsxfun(@eq, theta_vec, 3*pi/4);
 
 J_high = J_high(:);
 J_low = J_low(:);
@@ -167,10 +183,20 @@ J_low_lr = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_lr, J_high(ind_right)), bsx
 J_low_ruld = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_ruld, J_high(ind_ru)), bsxfun(@and, J_low.*theta_vec_ruld, J_high(ind_ld)));
 J_low_ud = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_ud, J_high(ind_up)), bsxfun(@and, J_low.*theta_vec_ud, J_high(ind_down)));
 J_low_lurd = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_lurd, J_high(ind_lu)), bsxfun(@and, J_low.*theta_vec_lurd, J_high(ind_rd)));
-
 J_low_valid = bsxfun(@or, bsxfun(@or, J_low_lr, J_low_ruld), bsxfun(@or, J_low_ud, J_low_lurd));
+J_high_new = bitor(J_high, J_low_valid);
 
-E = J_high + J_low_valid;
+while sum(bitxor(J_high_new, J_high)) ~= 0;
+    J_high = J_high_new;
+    J_low_lr = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_lr, J_high(ind_right)), bsxfun(@and, J_low.*theta_vec_lr, J_high(ind_left)));
+    J_low_ruld = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_ruld, J_high(ind_ru)), bsxfun(@and, J_low.*theta_vec_ruld, J_high(ind_ld)));
+    J_low_ud = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_ud, J_high(ind_up)), bsxfun(@and, J_low.*theta_vec_ud, J_high(ind_down)));
+    J_low_lurd = bsxfun(@or, bsxfun(@and, J_low.*theta_vec_lurd, J_high(ind_lu)), bsxfun(@and, J_low.*theta_vec_lurd, J_high(ind_rd)));
+    J_low_valid = bsxfun(@or, bsxfun(@or, J_low_lr, J_low_ruld), bsxfun(@or, J_low_ud, J_low_lurd));
+    J_high_new = bitor(J_high, J_low_valid);
+end
+
+E = J_high_new;
 
 E = reshape(E, [nr, nc]);
 
