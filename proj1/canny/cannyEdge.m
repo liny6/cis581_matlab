@@ -11,8 +11,8 @@ close all
 I = rgb2gray(I);
 
 %% Construct 2D Gaussian filter
-Gx = normpdf([-5:1:5], 0, 1);
-Gy = normpdf([-5:1:5], 0, 1)';
+Gx = normpdf([-3:1:3], 0, 1);
+Gy = normpdf([-3:1:3], 0, 1)';
 
 %% Compute magnitutde and orientation of derivatives
 %  J = double(X, Y), the magnitude of derivatives
@@ -21,7 +21,7 @@ Gy = normpdf([-5:1:5], 0, 1)';
 %  Jy = double(X, Y), the magnitude of derivatives along y-axis
 [J, theta, Jx, Jy] = findDerivatives(I, Gx, Gy);
 
-visDerivatives(I, J, Jx, Jy);
+%findDerivatives(I, J, Jx, Jy);
 
 
 %% Detect local maximum
@@ -77,10 +77,10 @@ angle(angle>=pi/4&angle<pi/2) = pi/4;
 angle(angle>=pi/2&angle<3*pi/4) = pi/2;
 angle(angle>=3*pi/4&angle<=pi) = 3*pi/4;
 %}
-angle(angle>=0 & angle<pi/8) = 0;
-angle(angle>=pi/8 & angle<3*pi/8) = pi/4;
-angle(angle>=3*pi/8 & angle<5*pi/8) = pi/2;
-angle(angle>=5*pi/8 & angle<=pi) = 3*pi/4;
+angle(angle >= 0 & angle < pi/8) = 0;
+angle(angle >= pi/8 & angle < 3*pi/8) = pi/4;
+angle(angle >= 3*pi/8 & angle < 5*pi/8) = pi/2;
+angle(angle >= 5*pi/8 & angle < pi) = 3*pi/4;
 
 
 [nr, nc] = size(J);
@@ -131,8 +131,11 @@ M = bsxfun(@and, bsxfun(@and, (J_lr > J_vec(ind_right)), (J_lr > J_vec(ind_ru)))
 %}
 
 lr_inter = max(J_vec(ind_right).*(1-sin(theta_vec)) + J_vec(ind_ru).*(sin(theta_vec)), J_vec(ind_left).*(1-sin(theta_vec)) + J_vec(ind_ld).*(sin(theta_vec)));
+
 ruld_inter = max(J_vec(ind_up).*(1-cos(theta_vec)) + J_vec(ind_ru).*(cos(theta_vec)), J_vec(ind_down).*(1-cos(theta_vec)) + J_vec(ind_ld).*(cos(theta_vec)));
+
 ud_inter = max(J_vec(ind_up).*(1+cos(theta_vec)) + J_vec(ind_lu).*(-cos(theta_vec)), J_vec(ind_down).*(1+cos(theta_vec)) + J_vec(ind_rd).*(-cos(theta_vec)));
+
 lurd_inter = max(J_vec(ind_left).*(1-sin(theta_vec)) + J_vec(ind_lu).*(sin(theta_vec)), J_vec(ind_right).*(1-sin(theta_vec)) + J_vec(ind_rd).*(sin(theta_vec)));
 
 
@@ -144,7 +147,7 @@ ruld_inter = max( J_vec(ind_ru) + (J_vec(ind_up) - J_vec(ind_ru) .* (theta_vec -
 ud_inter = max( J_vec(ind_up) + (J_vec(ind_lu) - J_vec(ind_up) .* (theta_vec - pi/2)), J_vec(ind_down) + (J_vec(ind_rd) - J_vec(ind_down)) .* (theta_vec - pi/2));
 lurd_inter = max( J_vec(ind_lu) + (J_vec(ind_left) - J_vec(ind_lu) .* (theta_vec - 3*pi/4)), J_vec(ind_rd) + (J_vec(ind_right) - J_vec(ind_rd)) .* (theta_vec - 3*pi/4));
 %}
-M = bitor(bitor((J_lr >= lr_inter),(J_ruld >= ruld_inter)), bitor((J_ud >= ud_inter),(J_lurd >= lurd_inter)));
+M = bitor(bitor((J_lr > lr_inter),(J_ruld > ruld_inter)), bitor((J_ud > ud_inter),(J_lurd > lurd_inter)));
 
 M = reshape(M, [nr, nc]);
 end

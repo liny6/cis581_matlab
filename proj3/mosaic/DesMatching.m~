@@ -1,0 +1,38 @@
+function [ m ] = DesMatching(p1, p2)
+%descriptor matching
+% % p1 = 64xn1 matrix of double values in the same format as the output from function
+% feat_desc above.
+% p2 = 64xn2 matrix of double values in the same format as the output from function
+% feat_desc above.
+% m = n1x1 vector of integers where m(i) points to the index of the descriptor in p2 that
+% matches with the descriptor p1(:,i). If no match is found for feature i, you should put
+% m(i)=-1.
+
+[~, n1] = size(p1);
+[~, n2] = size(p2);
+
+nns = zeros(2, n1); % nearest neighbors
+nns_ind = zeros(2, n1);
+
+%sum of squared error matrix, with size n1xn2 SSD(i, j) = sum((p1(:, i) - p2(:,j)).^2)
+for i = 1:n1
+    dist = bsxfun(@minus, p1(:, i), p2);
+    SSDn = sum(dist.^2);
+    [nn1, nn1_ind] = min(SSDn);
+    %modify SSDn
+    SSDn(nn1_ind) = inf;
+    [nn2, nn2_ind] = min(SSDn);
+    %SSD(i, :) = sum(dist.^2);
+    nns(:, i) = [nn1; nn2];
+    nns_ind(:, i) = [nn1_ind, nn2_ind];
+end
+
+threshold = 0.6;
+ratio = nns(1,:)./nns(2,:);
+
+is_good_match = ratio > threshold;
+
+m(is_good_match) = nns(1, :);
+m(~is_good_match) = -1;
+
+end
