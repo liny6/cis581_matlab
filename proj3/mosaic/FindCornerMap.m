@@ -3,16 +3,15 @@ function R  = FindCornerMap(I)
 %I is a RGB image and points is a n by 2 matrix with x coordinate in column
 %1 and y coordinate in column2
 
-I = double(rgb2gray(I));
 [nr, nc] = size(I);
 I = padarray(I, [6,6], 'symmetric'); % pad the image with symmetric padding to avoid corners at image's edge
 
 %define kernels
-Grad = [1,0 ,-1]; %gradient
+Grad = [1, 0,-1]; %gradient
 Gaus = normpdf(-5:1:5, 0, 1); %gaussian
 
-%define patch size (let's try 9x9 equal step function first)
-patch= -4:1:4;
+%define patch size (let's try 5x5 equal step function first)
+patch= -2:1:2;
 patch_size = length(patch);
 
 %smooth out the image and take gradient
@@ -37,10 +36,10 @@ inds = zeros(patch_size, patch_size, nr*nc);
 %vectorize shit
 [x, y] = meshgrid(1:nc, 1:nr);
 
-for i = 1:9
+for i = 1:patch_size
     x_shifts = x + patch(i);
     x_shifts = max(1, min(x_shifts, nc));
-    for j = 1:9
+    for j = 1:patch_size
         y_shifts = y + patch(j);
         y_shifts = max(1, min(y_shifts, nr));    
         inds(i, j, :) = sub2ind([nr, nc], y_shifts(:), x_shifts(:));

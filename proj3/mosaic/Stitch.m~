@@ -43,14 +43,6 @@ y_backward = y_backward(ind_avail);
 x_print = x_print(ind_avail);
 y_print = y_print(ind_avail);
 
-if x_shift > 0
-    x_print = x_print + ceil(x_shift);
-end
-
-if y_shift > 0
-    y_print = y_print + ceil(y_shift);
-end
-
 
 ind_print = sub2ind([nr_new, nc_new], y_print, x_print);
 ind_backward = sub2ind([nr2, nc2], y_backward, x_backward);

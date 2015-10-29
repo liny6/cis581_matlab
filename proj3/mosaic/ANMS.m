@@ -6,7 +6,7 @@ function [y, x, rmax] = ANMS(R, max_pts)
 %can be considered as a corner
 
 [nr, nc] = size(R);
-threshold = 10000;
+threshold = 5000;
 R = R(:);
 Sup = R > threshold;
 inds = 1:nr*nc;
@@ -38,6 +38,23 @@ R_data = flipud(sortrows(R_data, 3));
 %truncate excessive points
 rmax = R_data(1: max_pts, 3);
 [y, x] = ind2sub([nr, nc], R_data(1:max_pts, 2));
+
+%remove everything that has window outside the image, they are not good
+%features to match anyways
+
+window_size = 40;
+
+x_bool_l = x > window_size;
+x_bool_r = x < nc - window_size;
+y_bool_u = y > window_size;
+y_bool_d = y < nr - window_size;
+
+%boolean for the corners i want to keep
+keep = bitand(bitand(x_bool_l, x_bool_r), bitand(y_bool_u, y_bool_d));
+
+x = x(keep);
+y = y(keep);
+
 end
 
 
