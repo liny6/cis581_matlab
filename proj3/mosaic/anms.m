@@ -1,4 +1,4 @@
-function [y, x, rmax] = ANMS(R, max_pts)
+function [y, x, rmax] = anms(R, max_pts)
 %this supresses excessive corners using adaptive non maximum supression,
 %the input argument R is the cornerness map from FindCornerMap, des_num_corners
 %is the desired number of corners. The output argument y and x corresponds

@@ -1,4 +1,4 @@
-function I_stitched = Stitch( I1, I2, H )
+function I_stitched = stitch( I1, I2, H )
 %STITCH 2 images given homography
 
 %% First Figure out how big the final image should be
@@ -37,17 +37,30 @@ end
 
 [x_backward, y_backward] = apply_homography(inv(H), (x_print(:)+x_shift), (y_print(:)+y_shift));
 
-x_backward = round(x_backward);
-y_backward = round(y_backward);
+%x_backward = round(x_backward);
+%y_backward = round(y_backward);
+
+x_backward_xlow = floor(x_backward);
+x_backward_xhigh = ceil(x_backward);
+
+y_backward_ylow = floor(y_backward);
+y_backward_yhigh = ceil(y_backward);
+
+x_dist = x_backward - x_backward_xlow;
+y_dist = y_backward - y_backward_ylow;
 
 ind_avail = bitand(bitand(x_backward>1, x_backward<=nc2),bitand(y_backward>1, y_backward<=nr2));
 
-x_backward = x_backward(ind_avail);
-y_backward = y_backward(ind_avail);
+x_backward_xlow = x_backward_xlow(ind_avail);
+y_backward_ylow = y_backward_ylow(ind_avail);
 
+x_backward_xhigh = x_backward_xhigh(ind_avail);
+y_backward_yhigh = y_backward_yhigh(ind_avail);
 
 x_print = x_print(ind_avail);
 y_print = y_print(ind_avail);
+x_dist = x_dist(ind_avail);
+y_dist = y_dist(ind_avail);
 
 if x_shift > 0
     x_print = x_print + floor(x_shift);
@@ -59,25 +72,49 @@ if y_shift > 0
 %    corners_I2(2, :) = (corners_I2(2,:) + floor(y_shift));
 end
 
+x_print(x_print>nc_new) = nc_new;
+y_print(y_print>nr_new) = nr_new;
 
 ind_print = sub2ind([nr_new, nc_new], y_print, x_print);
-ind_backward = sub2ind([nr2, nc2], y_backward, x_backward);
+ind_ylowxlow = sub2ind([nr2, nc2], y_backward_ylow, x_backward_xlow);
+ind_ylowxhigh = sub2ind([nr2, nc2], y_backward_ylow, x_backward_xhigh);
+ind_yhighxlow = sub2ind([nr2, nc2], y_backward_yhigh, x_backward_xlow);
+ind_yhighxhigh = sub2ind([nr2, nc2], y_backward_yhigh, x_backward_xhigh);
 
-I2r = I2(:, :, 1);
-I2g = I2(:, :, 2);
-I2b = I2(:, :, 3);
+% all these for anti aliasing
+% the word i am looking for is bilinear interpolation
+
+I2r = double(I2(:, :, 1));
+I2g = double(I2(:, :, 2));
+I2b = double(I2(:, :, 3));
+
+I2_warped_r_ylow = zeros(nr_new*nc_new, 1);
+I2_warped_g_ylow = zeros(nr_new*nc_new, 1);
+I2_warped_b_ylow = zeros(nr_new*nc_new, 1);
+
+I2_warped_r_yhigh = zeros(nr_new*nc_new, 1);
+I2_warped_g_yhigh= zeros(nr_new*nc_new, 1);
+I2_warped_b_yhigh= zeros(nr_new*nc_new, 1);
 
 I2_warped_r = zeros(nr_new*nc_new, 1);
 I2_warped_g = zeros(nr_new*nc_new, 1);
 I2_warped_b = zeros(nr_new*nc_new, 1);
 
-I2_warped_r(ind_print) = I2r(ind_backward);
-I2_warped_g(ind_print) = I2g(ind_backward);
-I2_warped_b(ind_print) = I2b(ind_backward);
+I2_warped_r_ylow(ind_print) = I2r(ind_ylowxlow).*(1-x_dist(:)) + I2r(ind_ylowxhigh).*x_dist(:);
+I2_warped_g_ylow(ind_print) = I2g(ind_ylowxlow).*(1-x_dist(:)) + I2g(ind_ylowxhigh).*x_dist(:);
+I2_warped_b_ylow(ind_print) = I2b(ind_ylowxlow).*(1-x_dist(:)) + I2b(ind_ylowxhigh).*x_dist(:);
+
+I2_warped_r_yhigh(ind_print) = I2r(ind_yhighxlow).*(1-x_dist(:)) + I2r(ind_yhighxhigh).*x_dist(:);
+I2_warped_g_yhigh(ind_print) = I2g(ind_yhighxlow).*(1-x_dist(:)) + I2g(ind_yhighxhigh).*x_dist(:);
+I2_warped_b_yhigh(ind_print) = I2b(ind_yhighxlow).*(1-x_dist(:)) + I2b(ind_yhighxhigh).*x_dist(:);
+
+I2_warped_r(ind_print) = I2_warped_r_ylow(ind_print).*(1-y_dist(:)) + I2_warped_r_yhigh(ind_print).*y_dist(:);
+I2_warped_g(ind_print) = I2_warped_g_ylow(ind_print).*(1-y_dist(:)) + I2_warped_g_yhigh(ind_print).*y_dist(:);
+I2_warped_b(ind_print) = I2_warped_b_ylow(ind_print).*(1-y_dist(:)) + I2_warped_b_yhigh(ind_print).*y_dist(:);
 
 I2_warped = zeros(nr_new, nc_new, 3);
 
-I2_warped(:, :, 1) = reshape(I2_warped_r, [nr_new, nc_new]);
+I2_warped(:, :, 1) = reshape(I2_warped_r', [nr_new, nc_new]);
 I2_warped(:, :, 2) = reshape(I2_warped_g', [nr_new, nc_new]);
 I2_warped(:, :, 3) = reshape(I2_warped_b', [nr_new, nc_new]);
 
@@ -114,16 +151,7 @@ I1_shifted = zeros(nr_new, nc_new, 3);
 
 I1_shifted(ind_I1_new) = I1(ind_I1);
 
-%% do this for result for now, fix later
-%I_stitched = twoBandBlending(I1_shifted, I2_warped);
 
-naive_stitch = uint8(I1_shifted)/2 + uint8(I2_warped)/2;
-imshow(naive_stitch)
-%{
-hold on
-plot(corners_I2(1,:), corners_I2(2,:), 'ro')
-plot(corners_I1(1,:), corners_I1(2,:), 'bx')
-%}
 %% find intersection region
 
 Isx = bsxfun(@and, sum(I1_shifted,3), sum(I2_warped,3));

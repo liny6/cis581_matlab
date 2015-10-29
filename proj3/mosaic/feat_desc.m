@@ -1,4 +1,4 @@
-function p = ExtractDes(I, y, x)
+function p = feat_desc(I, y, x)
 %extract feature descriptor
 %let's get a 8x8 patch describing each corner
 %p is a 64xn matrix

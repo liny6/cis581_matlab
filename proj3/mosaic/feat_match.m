@@ -1,4 +1,4 @@
-function [ m ] = DesMatching(p1, p2)
+function [ m ] = feat_match(p1, p2)
 %descriptor matching
 % % p1 = 64xn1 matrix of double values in the same format as the output from function
 % feat_desc above.
@@ -86,7 +86,7 @@ for i = 1:length(p1_nn_ind)
     %}
 end
 
-threshold = 0.4;
+threshold = 0.25;
 
 ratio = p1_nn_val(:,1)./p1_nn_val(:,2);
 %ratio2 = p2_nn_val(:,1)./p2_nn_val(:,2);

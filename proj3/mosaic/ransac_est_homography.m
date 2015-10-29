@@ -1,4 +1,4 @@
-function [ H, inlier_ind ] = RANSAC( y1, x1, y2, x2, thresh )
+function [ H, inlier_ind ] = ransac_est_homography( y1, x1, y2, x2, thresh )
 %RANSAC Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,7 +6,7 @@ l = length(y1); %find number of features to match
 some_ind = 1:l;
 inlier_count_old = 0;
 
-for i = 1:3000
+for i = 1:4000
     
     rand_inds = ceil(rand(1, 4)*l);
     y1_fit = y1(rand_inds);
