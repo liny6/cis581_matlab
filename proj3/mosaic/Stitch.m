@@ -14,15 +14,15 @@ x_shift = min(x_warp);
 y_shift = min(y_warp);
 
 if x_shift < 0
-    nc_new = ceil(max([max(x_warp), nc1 - x_shift]) - x_shift);
+    nc_new = ceil(max([max(x_warp) - x_shift, nc1 - x_shift]));
 else
-    nc_new = ceil(max([max(x_warp), nc1 - x_shift]) + x_shift - 1);
+    nc_new = ceil(max([max(x_warp), nc1]));
 end
 
 if y_shift < 0
-    nr_new = ceil(max([max(y_warp), nr1 - y_shift]) - y_shift);
+    nr_new = ceil(max([max(y_warp) - y_shift, nc1 - y_shift]));
 else
-    nr_new = ceil(max([max(y_warp), nr1 - y_shift]) + y_shift - 1);
+    nr_new = ceil(max([max(y_warp), nr1]));
 end
 
 %% Warp + move I2
@@ -101,7 +101,9 @@ I1_shifted = zeros(nr_new, nc_new, 3);
 
 I1_shifted(ind_I1_new) = I1(ind_I1);
 
+%% do this for result for now, fix later
 
+I_stitched = uint8(I1_shifted)/2 + uint8(I2_warped)/2;
 
 
 end
