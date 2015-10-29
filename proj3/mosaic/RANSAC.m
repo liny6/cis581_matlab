@@ -6,7 +6,7 @@ l = length(y1); %find number of features to match
 some_ind = 1:l;
 inlier_count_old = 0;
 
-for i = 1:2500
+for i = 1:3000
     
     rand_inds = ceil(rand(1, 4)*l);
     y1_fit = y1(rand_inds);
