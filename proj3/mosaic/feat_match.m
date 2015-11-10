@@ -86,7 +86,7 @@ for i = 1:length(p1_nn_ind)
     %}
 end
 
-threshold = 0.25;
+threshold = 0.1;
 
 ratio = p1_nn_val(:,1)./p1_nn_val(:,2);
 %ratio2 = p2_nn_val(:,1)./p2_nn_val(:,2);

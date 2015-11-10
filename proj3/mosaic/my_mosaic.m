@@ -1,6 +1,8 @@
-function I_stitched = stitch_wrapper( I1, I2 )
+function I_stitched = my_mosaic( I1, I2 )
 
-[~, nc1, ~] = size(I1);
+[nr1, nc1, ~] = size(I1);
+[nr2, nc2, ~] = size(I2);
+
 
 I1_process = double(rgb2gray(I1));
 I2_process = double(rgb2gray(I2));
@@ -8,11 +10,29 @@ I2_process = double(rgb2gray(I2));
 R1 = FindCornerMap(I1_process);
 R2 = FindCornerMap(I2_process);
 
+nr_plot = max([nr1, nr2]);
+nc_plot = max([nc1, nc2]);
+
+I1plot = zeros(nr_plot, nc_plot, 3);
+I2plot = zeros(nr_plot, nc_plot, 3);
+
+[r1, c1, rgb1] = meshgrid(1:nr1, 1:nc1, 1:3);
+[r2, c2, rgb2] = meshgrid(1:nr2, 1:nc2, 1:3);
+
+
+I1_plot_ind = sub2ind([nr_plot, nc_plot, 3], r1, c1, rgb1);
+I2_plot_ind = sub2ind([nr_plot, nc_plot, 3], r2, c2, rgb2);
+I1_ind = sub2ind([nr1, nc1, 3],r1, c1, rgb1);
+I2_ind = sub2ind([nr2, nc2, 3],r2, c2, rgb2);
+
+I1plot(I1_plot_ind) = I1(I1_ind);
+I2plot(I2_plot_ind) = I2(I2_ind);
+
 
 [y1, x1, ~] = anms(R1, 150);
 [y2, x2, ~] = anms(R2, 150);
 
-I12 = [rgb2gray(I1), rgb2gray(I2)];
+I12 = uint8([I1plot, I2plot]);
 
 
 figure(1)
