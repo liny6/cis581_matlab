@@ -1,26 +1,21 @@
-function [a1, ax, ay, w] = est_tps( ctr_tps, target_value )
-%target value is one column vector bro
-lambda = 0.0001;
-l = length(ctr_tps);
+function [a1,ax,ay,w, C] = est_tps(ctr_pts, target_value)
+%A * B = v
+Xc = ctr_pts(:,1);%control pys
+Yc = ctr_pts(:,2);
+V = [target_value;zeros(3,1)];
+P = [ones(size(ctr_pts,1),1),ctr_pts];
 
-x_diff = bsxfun(@minus, ctr_tps(:,1), ctr_tps(:,1)');
-y_diff = bsxfun(@minus, ctr_tps(:,2), ctr_tps(:,2)');
-
-rsq = (x_diff.^2 + y_diff.^2);
-
-K = -rsq.*log(rsq);
+r_sq = (repmat(Xc',size(Xc,1),1) - repmat(Xc,1,size(Xc,1))).^2 ... 
+    + (repmat(Yc',size(Yc,1),1) - repmat(Yc,1,size(Yc,1))).^2;
+K = r_sq.*log(r_sq);
 K(isnan(K)) = 0;
-P = [ctr_tps, ones(l, 1)];
-O = zeros(3,3);
 
-TPS_mat = [K , P; P', O];
-TPS_stable = TPS_mat + lambda*eye(l+3);
+A = [K, P; P', zeros(3,3)];
+C = A + eps.*eye(size(ctr_pts,1)+3,size(ctr_pts,1)+3);
+B = (A + eps.*eye(size(ctr_pts,1)+3,size(ctr_pts,1)+3))\V;
 
-param = TPS_stable\[target_value; 0; 0; 0];
-
-w = param(1:l);
-ax = param(l+1);
-ay = param(l+2);
-a1 = param(l+3);
+w = B(1:end-3);
+a1 = B(end-2);
+ay= B(end);
+ax = B(end-1);
 end
-

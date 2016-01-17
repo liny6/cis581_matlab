@@ -1,94 +1,35 @@
-function morphed_im = morph_tps(im_src, a1_x, ax_x, ay_x, w_x, a1_y, ax_y, ay_y, w_y, ctr_pts, sz)
+function morphed_im = morph_tps(im_source, a1_x, ax_x, ay_x, w_x, a1_y, ax_y, ay_y, w_y, ctr_pts, sz)
 
-[nr_src, nc_src, ~] = size(im_src);
-nr = sz(1);
-nc = sz(2);
+[x,y] = meshgrid(1:size(im_source,2),1:size(im_source,1));
+x_ind = x(:);
+y_ind = y(:);
+ind_Br = sub2ind(size(im_source), y_ind, x_ind,ones(size(x_ind,1),1));
+ind_Bg = sub2ind(size(im_source), y_ind, x_ind,2*ones(size(x_ind,1),1));
+ind_Bb = sub2ind(size(im_source), y_ind, x_ind,3*ones(size(x_ind,1),1));
 
-morphed_im = zeros(nr, nc, 3);
-%{
-x_old = (1:nc);
-y_old = (1:nr);
-rv = (bsxfun(@minus, ctr_pts(:,1)' ,x_old').^2 + bsxfun(@minus, ctr_pts(:,2)', y_old').^2);
-%r = (bsxfun(@minus, ctr_pts(:,1)' ,ctr_pts(:,1)).^2 + bsxfun(@minus, ctr_pts(:,2)', ctr_pts(:,2)).^2);
-%Ud = -rd.*log(rd);
-Uv = -rv.*log(rv);
-Uv(isnan(Uv)) = 0;
+r_sq = (repmat(ctr_pts(:,1)',size(x_ind,1),1) - repmat(x_ind,1,size(ctr_pts,1))).^2 ...
+    + (repmat(ctr_pts(:,2)',size(y_ind,1),1) - repmat(y_ind,1,size(ctr_pts,1))).^2;
+U = r_sq.*log(r_sq);
+U(isnan(U)) = 0;
+
+im_xy = repmat([a1_x,a1_y],size(x_ind,1),1) + repmat([ax_x,ax_y],size(x_ind,1),1).* [x_ind,x_ind] ...
+    + repmat([ay_x,ay_y],size(y_ind,1),1).* [y_ind, y_ind] +  U*[w_x,w_y] ;
+im_xy = round(im_xy);
 
 
-%x_newd = a1_x + ax_x*ctr_pts(:,1) + ay_x*ctr_pts(:,2) + sum(bsxfun(@times, w_x', Ud),2);
-%y_newd = a1_y + ax_y*ctr_pts(:,1) + ay_y*ctr_pts(:,2) + sum(bsxfun(@times, w_y', Ud),2);
-x_newv = a1_x + ax_x*x_old' + ay_x*y_old' + sum(bsxfun(@times, w_x', Uv),2);
-y_newv = a1_y + ax_y*x_old' + ay_y*y_old' + sum(bsxfun(@times, w_y', Uv),2);
-%clamp values that are outside of the image
-x_newv(x_newv < 1) = 1;
-y_newv(y_newv < 1) = 1;
+im_xy(im_xy(:,1)>size(im_source,2),1) = size(im_source,2);
+im_xy(im_xy(:,2)>size(im_source,1),2) = size(im_source,1);
+im_xy(im_xy<1) =1;
 
-x_newv(x_newv > nc) = nc;
-y_newv(y_newv > nr) = nr;
+ind_Ar = sub2ind(size(im_source),im_xy(:,2),im_xy(:,1),ones(size(im_xy,1),1));
+ind_Ag = sub2ind(size(im_source),im_xy(:,2),im_xy(:,1),2*ones(size(im_xy,1),1));
+ind_Ab = sub2ind(size(im_source),im_xy(:,2),im_xy(:,1),3*ones(size(im_xy,1),1));
 
-x_low = floor(x_newv);
-x_high = ceil(x_newv);
-y_low = floor(y_newv);
-y_high = ceil(y_newv);
+morphed_im = zeros(size(im_source));
+morphed_im(ind_Br) = im_source(ind_Ar);
+morphed_im(ind_Bg) = im_source(ind_Ag);
+morphed_im(ind_Bb) = im_source(ind_Ab);
 
-%bilinear interpolation
-
-%morphed_im_yhigh = bsxfun(@times, double(im_src(y_low, x_high, :)), (y_high - y_new)) + bsxfun(@times, double(im_src(y_high, x_high, :)), (y_new - y_low));
-%morphed_im_ylow = bsxfun(@times, double(im_src(y_low, x_low, :)), (y_high - y_new)) + bsxfun(@times, double(im_src(y_high, x_low, :)), (y_new - y_low));
-%morphed_im = bsxfun(@times, morphed_im_yhigh, (x_new - x_low)') + bsxfun(@times, morphed_im_ylow, (x_high - x_new)');
-
-morphed_im = im_src(y_low, x_low, :);
-%}
-for i = 1:nc
-    for j = 1:nr
-            
-            x_old = i*nc_src/nc;
-            y_old = j*nr_src/nr;
-            
-            r = (ctr_pts(:,1)-x_old).^2 + (ctr_pts(:,2)-y_old).^2;
-            U = -r.*log(r);
-            U(isnan(U)) = 0;
-            x_new = a1_x + ax_x*x_old + ay_x*y_old + sum(w_x.*U);
-            y_new = a1_y + ax_y*x_old + ay_y*y_old + sum(w_y.*U);
-         
-            %bilinear interpolation
-            if x_new < 1
-                x_new = 1;
-            end
-            
-            if y_new < 1
-                y_new =1;
-            end
-            
-            if x_new > nc_src
-                x_new = nc_src;
-            end
-
-            if y_new > nr_src
-                y_new = nr_src;
-            end
- 
-            x_high = ceil(x_new);
-            x_low = floor(x_new);
-            
-            y_high = ceil(y_new);
-            y_low = floor(y_new);
-            
-            if x_high ~= x_new
-                avgyhigh = im_src(y_high, x_low, :) * (x_high - x_new) + im_src(y_high, x_high, :) * (x_new - x_low);
-                avgylow = im_src(y_low, x_low, :) * (x_high - x_new) + im_src(y_low, x_high, :) * (x_new - x_low);
-            else
-                avgyhigh = im_src(y_high, x_new, :);
-                avgylow = im_src(y_low, x_new, :);
-            end
-            
-            if y_high ~= y_new
-                morphed_im(j, i, :) = avgyhigh*(y_new - y_low) + avgylow*(y_high - y_new);
-            else
-                morphed_im(j, i, :) = avgylow;
-            end
-            
-            
-    end
-end
+morphed_im = uint8(morphed_im);
+morphed_im = imresize(morphed_im, sz);
 end
